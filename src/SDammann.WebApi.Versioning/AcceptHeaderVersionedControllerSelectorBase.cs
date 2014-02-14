@@ -13,12 +13,22 @@ namespace SDammann.WebApi.Versioning {
     /// Derived classes must implement <see cref="GetVersion"/>
     /// </remarks>
     public abstract class AcceptHeaderVersionedControllerSelectorBase : VersionedControllerSelector {
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AcceptHeaderVersionedControllerSelector"/> class.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         protected AcceptHeaderVersionedControllerSelectorBase(HttpConfiguration configuration)
-            : base(configuration) {
+            : base(configuration, null) { }
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AcceptHeaderVersionedControllerSelector"/> class.
+        /// </summary>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="defaultVersion">The version to default to if no version is present in accept header.</param>
+        protected AcceptHeaderVersionedControllerSelectorBase(HttpConfiguration configuration, string defaultVersion)
+            : base(configuration, defaultVersion)
+        {
         }
 
         protected override ControllerIdentification GetControllerIdentificationFromRequest(HttpRequestMessage request) {
@@ -49,7 +59,7 @@ namespace SDammann.WebApi.Versioning {
                 }
             }
 
-            return null;
+            return DefaultVersion;
         }
 
         /// <summary>

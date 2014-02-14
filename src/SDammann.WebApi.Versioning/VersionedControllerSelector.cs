@@ -1,4 +1,5 @@
-﻿namespace SDammann.WebApi.Versioning {
+﻿namespace SDammann.WebApi.Versioning
+{
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -21,7 +22,8 @@
     ///   Represents an <see cref="IHttpControllerSelector" /> implementation that supports versioning and selects an controller based on versioning by convention (namespace.Api.Version1.xxxController).
     ///   How the actual controller to be invoked is determined, is up to the derived class to implement.
     /// </summary>
-    public abstract class VersionedControllerSelector : IHttpControllerSelector {
+    public abstract class VersionedControllerSelector : IHttpControllerSelector
+    {
         private static LockValue<string> _VersionPrefix = "Version";
         private static LockValue<string> _ControllerSuffix = DefaultHttpControllerSelector.ControllerSuffix;
 
@@ -30,18 +32,23 @@
         /// <summary>
         /// Gets the suffix in the Controller <see cref="Type"/>s <see cref="Type.Name"/>
         /// </summary>
-        public static string ControllerSuffix {
+        public static string ControllerSuffix
+        {
             get { return _ControllerSuffix; }
-            set {
-                if (value == null) {
+            set
+            {
+                if (value == null)
+                {
                     throw new ArgumentNullException("value");
                 }
 
-                if (String.IsNullOrWhiteSpace(value)) {
+                if (String.IsNullOrWhiteSpace(value))
+                {
                     throw new ArgumentException(String.Format(ExceptionStrings.CannotSetEmptyValue, "ControllerSuffix"), "value");
                 }
 
-                if (_ControllerSuffix.IsLocked) {
+                if (_ControllerSuffix.IsLocked)
+                {
                     throw new InvalidOperationException(String.Format(ExceptionStrings.ControllerDiscoveryProcessAlreadyRun, "ControllerSuffix"));
                 }
 
@@ -62,18 +69,23 @@
         ///     Company.Version1.ProductController as being a version 1 controller.
         /// </para>
         /// </remarks>
-        public static string VersionPrefix {
+        public static string VersionPrefix
+        {
             get { return _VersionPrefix; }
-            set {
-                if (value == null) {
+            set
+            {
+                if (value == null)
+                {
                     throw new ArgumentNullException("value");
                 }
 
-                if (String.IsNullOrWhiteSpace(value)) {
+                if (String.IsNullOrWhiteSpace(value))
+                {
                     throw new ArgumentException(String.Format(ExceptionStrings.CannotSetEmptyValue, "VersionPrefix"), "value");
                 }
 
-                if (_VersionPrefix.IsLocked) {
+                if (_VersionPrefix.IsLocked)
+                {
                     throw new InvalidOperationException(String.Format(ExceptionStrings.ControllerDiscoveryProcessAlreadyRun, "VersionPrefix"));
                 }
 
@@ -84,42 +96,60 @@
         private readonly HttpConfiguration _configuration;
         private readonly Lazy<ConcurrentDictionary<ControllerIdentification, HttpControllerDescriptor>> _controllerInfoCache;
         private readonly HttpControllerTypeCache _controllerTypeCache;
+        private readonly string _defaultVersion;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="System.Web.Http.Dispatcher.DefaultHttpControllerSelector" /> class.
         /// </summary>
         /// <param name="configuration"> The configuration. </param>
-        protected VersionedControllerSelector(HttpConfiguration configuration) {
-            if (configuration == null) {
-                throw new ArgumentNullException("configuration");
-            }
+        protected VersionedControllerSelector(HttpConfiguration configuration) : this(configuration, null) { }
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="System.Web.Http.Dispatcher.DefaultHttpControllerSelector" /> class.
+        /// </summary>
+        /// <param name="configuration"> The configuration. </param>
+        /// <param name="defaultVersion">The version to default to if no version is present in accept header.</param>
+        protected VersionedControllerSelector(HttpConfiguration configuration, string defaultVersion)
+        {
+            this._configuration = GetConfigurationOrThrowNullArgumentException(configuration);
+            this._controllerTypeCache = new HttpControllerTypeCache(this._configuration);
+            this._defaultVersion = defaultVersion;
 
             this._controllerInfoCache =
                     new Lazy<ConcurrentDictionary<ControllerIdentification, HttpControllerDescriptor>>(this.InitializeControllerInfoCache);
-            this._configuration = configuration;
-            this._controllerTypeCache = new HttpControllerTypeCache(this._configuration);
         }
 
+        private HttpConfiguration GetConfigurationOrThrowNullArgumentException(HttpConfiguration configuration)
+        {
+            if (configuration == null)
+                throw new ArgumentNullException("configuration");
+            return configuration;
+        }
+
+        public string DefaultVersion { get { return _defaultVersion; } }
 
         #region IHttpControllerSelector Members
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
                 Justification = "Caller is responsible for disposing of response instance.")]
-        public HttpControllerDescriptor SelectController(HttpRequestMessage request) {
-            if (request == null) {
+        public HttpControllerDescriptor SelectController(HttpRequestMessage request)
+        {
+            if (request == null)
+            {
                 throw new ArgumentNullException("request");
             }
 
             ControllerIdentification controllerName = this.GetControllerIdentificationFromRequest(request);
-            
-            if (String.IsNullOrEmpty(controllerName.Name)) {
+
+            if (String.IsNullOrEmpty(controllerName.Name))
+            {
                 throw new HttpResponseException(request.CreateResponse(HttpStatusCode.NotFound));
             }
 
             if (controllerName.Version == null) controllerName.Version = this.GetVersionRouteDefaults(request);
-            
+
             HttpControllerDescriptor controllerDescriptor;
-            if (this._controllerInfoCache.Value.TryGetValue(controllerName, out controllerDescriptor)) {
+            if (this._controllerInfoCache.Value.TryGetValue(controllerName, out controllerDescriptor))
+            {
                 return controllerDescriptor;
             }
 
@@ -128,7 +158,8 @@
             // ControllerInfoCache is already initialized.
             Contract.Assert(matchingTypes.Count != 1);
 
-            if (matchingTypes.Count == 0) {
+            if (matchingTypes.Count == 0)
+            {
                 // no matching types
                 throw new HttpResponseException(request.CreateResponse(
                                                                        HttpStatusCode.NotFound,
@@ -145,7 +176,8 @@
 
         private string GetVersionRouteDefaults(HttpRequestMessage request)
         {
-            if (request == null) {
+            if (request == null)
+            {
                 throw new ArgumentNullException("request");
             }
 
@@ -155,10 +187,11 @@
             {
                 return data as string;
             }
-            return null;
+            return this._defaultVersion;
         }
 
-        public IDictionary<string, HttpControllerDescriptor> GetControllerMapping() {
+        public IDictionary<string, HttpControllerDescriptor> GetControllerMapping()
+        {
             return this._controllerInfoCache.Value.ToDictionary(c => VersionPrefix + c.Key.Version + "." + c.Key.Name, c => c.Value, StringComparer.OrdinalIgnoreCase);
         }
 
@@ -170,13 +203,16 @@
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        protected string GetControllerNameFromRequest(HttpRequestMessage request) {
-            if (request == null) {
+        protected string GetControllerNameFromRequest(HttpRequestMessage request)
+        {
+            if (request == null)
+            {
                 throw new ArgumentNullException("request");
             }
 
             IHttpRouteData routeData = request.GetRouteData();
-            if (routeData == null) {
+            if (routeData == null)
+            {
                 return default(String);
             }
 
@@ -187,17 +223,19 @@
             return controllerName.ToString();
         }
 
-        protected abstract ControllerIdentification GetControllerIdentificationFromRequest (HttpRequestMessage request);
+        protected abstract ControllerIdentification GetControllerIdentificationFromRequest(HttpRequestMessage request);
 
         private static string CreateAmbiguousControllerExceptionMessage(IHttpRoute route, string controllerName,
-                                                                         IEnumerable<Type> matchingTypes) {
+                                                                         IEnumerable<Type> matchingTypes)
+        {
             Contract.Assert(route != null);
             Contract.Assert(controllerName != null);
             Contract.Assert(matchingTypes != null);
 
             // Generate an exception containing all the controller types
             StringBuilder typeList = new StringBuilder();
-            foreach (Type matchedType in matchingTypes) {
+            foreach (Type matchedType in matchingTypes)
+            {
                 typeList.AppendLine();
                 typeList.Append(matchedType.FullName);
             }
@@ -208,7 +246,8 @@
                                  typeList);
         }
 
-        private ConcurrentDictionary<ControllerIdentification, HttpControllerDescriptor> InitializeControllerInfoCache() {
+        private ConcurrentDictionary<ControllerIdentification, HttpControllerDescriptor> InitializeControllerInfoCache()
+        {
             // lock dependend properties
             _VersionPrefix.Lock();
 
@@ -218,15 +257,21 @@
             var duplicateControllers = new HashSet<ControllerIdentification>();
             Dictionary<ControllerIdentification, ILookup<string, Type>> controllerTypeGroups = this._controllerTypeCache.Cache;
 
-            foreach (KeyValuePair<ControllerIdentification, ILookup<string, Type>> controllerTypeGroup in controllerTypeGroups) {
+            foreach (KeyValuePair<ControllerIdentification, ILookup<string, Type>> controllerTypeGroup in controllerTypeGroups)
+            {
                 ControllerIdentification controllerName = controllerTypeGroup.Key;
 
-                foreach (IGrouping<string, Type> controllerTypesGroupedByNs in controllerTypeGroup.Value) {
-                    foreach (Type controllerType in controllerTypesGroupedByNs) {
-                        if (result.Keys.Contains(controllerName)) {
+                foreach (IGrouping<string, Type> controllerTypesGroupedByNs in controllerTypeGroup.Value)
+                {
+                    foreach (Type controllerType in controllerTypesGroupedByNs)
+                    {
+                        if (result.Keys.Contains(controllerName))
+                        {
                             duplicateControllers.Add(controllerName);
                             break;
-                        } else {
+                        }
+                        else
+                        {
                             result.TryAdd(controllerName,
                                           new HttpControllerDescriptor(this._configuration, controllerName.Name, controllerType));
                         }
@@ -234,7 +279,8 @@
                 }
             }
 
-            foreach (ControllerIdentification duplicateController in duplicateControllers) {
+            foreach (ControllerIdentification duplicateController in duplicateControllers)
+            {
                 HttpControllerDescriptor descriptor;
                 result.TryRemove(duplicateController, out descriptor);
             }
@@ -247,7 +293,8 @@
         /// </summary>
         /// <param name="namespacePart">Part of a namespace string to check</param>
         /// <returns>True if the namespace part is a valid version number, false otherwise</returns>
-        internal static bool IsVersionNumber(string namespacePart) {
+        internal static bool IsVersionNumber(string namespacePart)
+        {
             return Regex.IsMatch(namespacePart, String.Format(@"{0}[0-9]+(_[0-9]+)*", VersionPrefix));
         }
 
@@ -256,7 +303,8 @@
         /// </summary>
         /// <param name="namespacePart">Part of a namespace string to convert</param>
         /// <returns>A string containing a valid version number. e.g. for the namespace part Version2_1 the string 2.1 would be returned</returns>
-        internal static string ToVersionNumber(string namespacePart) {
+        internal static string ToVersionNumber(string namespacePart)
+        {
             // we have a version, strip the prefix and convert version separators to ensure a valid namespace
             return namespacePart.Substring(VersionPrefix.Length).Replace("_", ".");
         }

@@ -20,6 +20,13 @@
         /// <param name="configuration"></param>
         public AcceptHeaderVersionedControllerSelector(HttpConfiguration configuration) : base(configuration) { }
 
+        /// <summary>
+        /// Initializes the <see cref="AcceptHeaderVersionedControllerSelector"/> instance
+        /// </summary>
+        /// <param name="configuration"></param>
+        /// <param name="defaultVersion">The version to default to if no version is present in accept header.</param>
+        public AcceptHeaderVersionedControllerSelector(HttpConfiguration configuration, string defaultVersion) : base(configuration, defaultVersion) { }
+
         protected override string GetVersion(MediaTypeWithQualityHeaderValue mimeType) {
             if (!String.Equals(mimeType.MediaType, AcceptMediaType, StringComparison.InvariantCultureIgnoreCase)) {
                 return null;
